@@ -1,0 +1,72 @@
+---
+title: "RegressionAnalysisFinalProject"
+output: word_document
+date: "2023-11-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+set.seed(10)
+library(dplyr)
+df = read.csv("/Users/Zeman/Desktop/ISyE6414FinalProjectData/ReducedDiabetesData.csv")
+cols_to_factor <- setdiff(names(df), "BMI")
+df <- df %>%mutate(across(all_of(cols_to_factor), as.factor))
+full_model = glm(Diabetes_binary~.,data=df,family=binomial)
+null_model = glm(Diabetes_binary~1,data=df,family=binomial)
+summary(full_model)
+```
+
+
+```{r}
+backward_model = step(full_model, direction = "backward")
+```
+
+
+
+
+```{r}
+forward_model = step(null_model, direction = "forward",scope=formula(full_model))
+```
+
+```{r}
+forward_model$coefficients
+```
+
+```{r}
+backward_log_model = glm(Diabetes_binary~HighBP + HighChol + CholCheck + BMI + HeartDiseaseorAttack +
+HvyAlcoholConsump + GenHlth + PhysHlth + DiffWalk + Age,data=df,family=binomial)
+summary(backward_log_model)
+```
+
+```{r}
+forward_log_model = glm(Diabetes_binary~GenHlth + Age + HighBP + HighChol + BMI + HvyAlcoholConsump + 
+    CholCheck + Stroke,data=df,family=binomial)
+summary(forward_log_model)
+```
+
+```{r}
+resids = rstandard(forward_log_model)
+fits = forward_log_model$fitted
+qqnorm(resids,col="navy",pch = 19) 
+qqline(resids,col="red")
+```
+
+
+```{r}
+plot(fits, resids,xlab="Fitted Values",ylab="Residuals",main="",col="navy",pch = 19) 
+abline(0, 0,col="gold",lty=2, lwd=2)
+```
+
+```{r}
+car::vif(forward_log_model)
+mean((forward_log_model$residuals))
+```
+
+```{r}
+pearres2 = residuals(forward_log_model,type="pearson") 
+pearson.tvalue = sum(pearres2^2)
+c(pearson.tvalue, 1-pchisq(pearson.tvalue,1481))
+```
