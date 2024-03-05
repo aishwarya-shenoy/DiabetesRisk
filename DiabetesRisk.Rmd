@@ -11,62 +11,796 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 set.seed(10)
 library(dplyr)
-df = read.csv("/Users/Zeman/Desktop/ISyE6414FinalProjectData/ReducedDiabetesData.csv")
-cols_to_factor <- setdiff(names(df), "BMI")
+## 
+## Attaching package: 'dplyr'
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+setwd("~/Desktop/6414GrpProject")
+df = read.csv(file="ReducedDiabetesData.csv")
+df2 = read.csv(file="ReducedDiabetesData.csv")
+cols_to_factor <- setdiff(names(df), c("BMI","MentHlth","PhysHlth"))
 df <- df %>%mutate(across(all_of(cols_to_factor), as.factor))
-full_model = glm(Diabetes_binary~.,data=df,family=binomial)
-null_model = glm(Diabetes_binary~1,data=df,family=binomial)
+
+sample1 = sample(c(TRUE,FALSE), nrow(df), replace = TRUE, prob = c(0.8, 0.2))
+train = df[sample1, ]
+test = df[!sample1, ]
+train2 = df2[sample1, ]
+```
+
+
+```{r}
+#Full Model
+full_model = glm(Diabetes_binary~.,data=train,family=binomial)
+null_model = glm(Diabetes_binary~1,data=train,family=binomial)
 summary(full_model)
 ```
-
+## Call:
+## glm(formula = Diabetes_binary ~ ., family = binomial, data = train)
+## 
+## Coefficients:
+##                        Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)           -7.031762   1.855077  -3.791 0.000150 ***
+## HighBP1                0.691528   0.154803   4.467 7.93e-06 ***
+## HighChol1              0.584915   0.149270   3.919 8.91e-05 ***
+## CholCheck1             1.035149   0.536167   1.931 0.053527 .  
+## BMI                    0.049449   0.012897   3.834 0.000126 ***
+## Smoker1               -0.023963   0.152565  -0.157 0.875192    
+## Stroke1                0.434558   0.395979   1.097 0.272455    
+## HeartDiseaseorAttack1  0.285630   0.242229   1.179 0.238329    
+## PhysActivity1         -0.210129   0.178395  -1.178 0.238842    
+## Fruits1                0.044736   0.150738   0.297 0.766634    
+## Veggies1               0.059811   0.177481   0.337 0.736116    
+## HvyAlcoholConsump1    -1.124228   0.347108  -3.239 0.001200 ** 
+## AnyHealthcare1         0.475778   0.339002   1.403 0.160477    
+## NoDocbcCost1          -0.349269   0.268555  -1.301 0.193414    
+## GenHlth2               0.905501   0.301687   3.001 0.002687 ** 
+## GenHlth3               1.563315   0.302504   5.168 2.37e-07 ***
+## GenHlth4               1.987342   0.350794   5.665 1.47e-08 ***
+## GenHlth5               1.750613   0.474913   3.686 0.000228 ***
+## MentHlth               0.002575   0.010760   0.239 0.810834    
+## PhysHlth              -0.002987   0.011538  -0.259 0.795708    
+## DiffWalk1              0.048073   0.253027   0.190 0.849315    
+## Age2                   0.710669   1.207170   0.589 0.556058    
+## Age3                   0.909532   1.143985   0.795 0.426581    
+## Age4                   0.891227   1.111901   0.802 0.422822    
+## Age5                   1.835925   1.065955   1.722 0.085010 .  
+## Age6                   2.044687   1.053805   1.940 0.052345 .  
+## Age7                   2.447642   1.048356   2.335 0.019557 *  
+## Age8                   2.787840   1.046609   2.664 0.007729 ** 
+## Age9                   2.700009   1.046934   2.579 0.009910 ** 
+## Education2             0.411736   1.398515   0.294 0.768445    
+## Education3            -0.318428   1.355837  -0.235 0.814319    
+## Education4             0.235888   1.299263   0.182 0.855932    
+## Education5            -0.043353   1.300959  -0.033 0.973417    
+## Education6             0.042894   1.304231   0.033 0.973764    
+## Income2               -0.088427   0.525710  -0.168 0.866422    
+## Income3                0.113792   0.496178   0.229 0.818607    
+## Income4               -0.272591   0.480623  -0.567 0.570605    
+## Income5               -0.171271   0.469502  -0.365 0.715265    
+## Income6               -0.631543   0.456526  -1.383 0.166552    
+## Income7               -0.384711   0.447172  -0.860 0.389613    
+## Income8               -0.377341   0.436485  -0.864 0.387314    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1649.1  on 1198  degrees of freedom
+## Residual deviance: 1199.1  on 1158  degrees of freedom
+## AIC: 1281.1
+## 
+## Number of Fisher Scoring iterations: 6
 
 ```{r}
-backward_model = step(full_model, direction = "backward")
+#Test for Overall Regression
+gstatFULL = full_model$null.deviance - deviance(full_model)
+cbind(gstatFULL, 1-pchisq(gstatFULL,length(coef(full_model))-1))
 ```
-
-
-
-
-```{r}
-forward_model = step(null_model, direction = "forward",scope=formula(full_model))
-```
+##      gstatFULL  
+## [1,]  450.0292 0
 
 ```{r}
 forward_model$coefficients
 ```
 
 ```{r}
-backward_log_model = glm(Diabetes_binary~HighBP + HighChol + CholCheck + BMI + HeartDiseaseorAttack +
-HvyAlcoholConsump + GenHlth + PhysHlth + DiffWalk + Age,data=df,family=binomial)
-summary(backward_log_model)
+#Pass deviance and Pearson
+pearres2 = residuals(full_model,type="pearson") 
+pearson.tvalue = sum(pearres2^2)
+c(pearson.tvalue, 1-pchisq(pearson.tvalue,full_model$df.residual))
+## [1] 1175.704372    0.352024
+c(deviance(full_model), 1-pchisq(deviance(full_model),full_model$df.residual))
 ```
+## [1] 1199.082374    0.195561
 
 ```{r}
-forward_log_model = glm(Diabetes_binary~GenHlth + Age + HighBP + HighChol + BMI + HvyAlcoholConsump + 
-    CholCheck + Stroke,data=df,family=binomial)
+#Backward Step Regression
+backward_model = step(full_model, direction = "backward")
+```
+## Start:  AIC=1281.08
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Smoker + 
+##     Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + 
+##     HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + 
+##     MentHlth + PhysHlth + DiffWalk + Age + Education + Income
+## 
+##                        Df Deviance    AIC
+## - Income                7   1204.3 1272.3
+## - Education             5   1202.6 1274.6
+## - Smoker                1   1199.1 1279.1
+## - DiffWalk              1   1199.1 1279.1
+## - MentHlth              1   1199.1 1279.1
+## - PhysHlth              1   1199.2 1279.2
+## - Fruits                1   1199.2 1279.2
+## - Veggies               1   1199.2 1279.2
+## - Stroke                1   1200.3 1280.3
+## - PhysActivity          1   1200.5 1280.5
+## - HeartDiseaseorAttack  1   1200.5 1280.5
+## - NoDocbcCost           1   1200.8 1280.8
+## - AnyHealthcare         1   1201.1 1281.1
+## <none>                      1199.1 1281.1
+## - CholCheck             1   1203.2 1283.2
+## - HvyAlcoholConsump     1   1210.4 1290.4
+## - HighChol              1   1214.4 1294.4
+## - BMI                   1   1214.8 1294.8
+## - HighBP                1   1218.9 1298.9
+## - GenHlth               4   1246.6 1320.6
+## - Age                   8   1261.8 1327.8
+## 
+## Step:  AIC=1272.32
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Smoker + 
+##     Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + 
+##     HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + 
+##     MentHlth + PhysHlth + DiffWalk + Age + Education
+## 
+##                        Df Deviance    AIC
+## - Education             5   1208.2 1266.2
+## - Smoker                1   1204.3 1270.3
+## - PhysHlth              1   1204.5 1270.5
+## - Fruits                1   1204.5 1270.5
+## - Veggies               1   1204.5 1270.5
+## - DiffWalk              1   1204.5 1270.5
+## - MentHlth              1   1204.6 1270.6
+## - NoDocbcCost           1   1205.6 1271.6
+## - HeartDiseaseorAttack  1   1205.7 1271.7
+## - PhysActivity          1   1205.9 1271.9
+## - AnyHealthcare         1   1205.9 1271.9
+## - Stroke                1   1206.3 1272.3
+## <none>                      1204.3 1272.3
+## - CholCheck             1   1207.6 1273.6
+## - HvyAlcoholConsump     1   1217.1 1283.1
+## - BMI                   1   1218.7 1284.7
+## - HighChol              1   1220.7 1286.7
+## - HighBP                1   1224.9 1290.9
+## - GenHlth               4   1254.1 1314.1
+## - Age                   8   1267.9 1319.9
+## 
+## Step:  AIC=1266.16
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Smoker + 
+##     Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + 
+##     HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + 
+##     MentHlth + PhysHlth + DiffWalk + Age
+## 
+##                        Df Deviance    AIC
+## - Smoker                1   1208.2 1264.2
+## - Fruits                1   1208.3 1264.3
+## - Veggies               1   1208.3 1264.3
+## - PhysHlth              1   1208.3 1264.3
+## - MentHlth              1   1208.3 1264.3
+## - DiffWalk              1   1208.4 1264.4
+## - NoDocbcCost           1   1209.2 1265.2
+## - AnyHealthcare         1   1209.3 1265.3
+## - HeartDiseaseorAttack  1   1209.5 1265.5
+## - Stroke                1   1210.1 1266.1
+## <none>                      1208.2 1266.2
+## - PhysActivity          1   1210.3 1266.3
+## - CholCheck             1   1212.0 1268.0
+## - HvyAlcoholConsump     1   1220.8 1276.8
+## - BMI                   1   1222.7 1278.7
+## - HighChol              1   1224.5 1280.5
+## - HighBP                1   1227.7 1283.7
+## - GenHlth               4   1261.1 1311.1
+## - Age                   8   1273.0 1315.0
+## 
+## Step:  AIC=1264.17
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + 
+##     HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + 
+##     MentHlth + PhysHlth + DiffWalk + Age
+## 
+##                        Df Deviance    AIC
+## - Fruits                1   1208.3 1262.3
+## - Veggies               1   1208.3 1262.3
+## - MentHlth              1   1208.3 1262.3
+## - PhysHlth              1   1208.3 1262.3
+## - DiffWalk              1   1208.4 1262.4
+## - NoDocbcCost           1   1209.3 1263.3
+## - AnyHealthcare         1   1209.3 1263.3
+## - HeartDiseaseorAttack  1   1209.5 1263.5
+## - Stroke                1   1210.1 1264.1
+## <none>                      1208.2 1264.2
+## - PhysActivity          1   1210.3 1264.3
+## - CholCheck             1   1212.0 1266.0
+## - HvyAlcoholConsump     1   1221.1 1275.1
+## - BMI                   1   1222.7 1276.7
+## - HighChol              1   1224.5 1278.5
+## - HighBP                1   1227.8 1281.8
+## - GenHlth               4   1261.4 1309.4
+## - Age                   8   1273.0 1313.0
+## 
+## Step:  AIC=1262.31
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     HeartDiseaseorAttack + PhysActivity + Veggies + HvyAlcoholConsump + 
+##     AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + 
+##     DiffWalk + Age
+## 
+##                        Df Deviance    AIC
+## - PhysHlth              1   1208.5 1260.5
+## - MentHlth              1   1208.5 1260.5
+## - DiffWalk              1   1208.5 1260.5
+## - Veggies               1   1208.5 1260.5
+## - NoDocbcCost           1   1209.4 1261.4
+## - AnyHealthcare         1   1209.5 1261.5
+## - HeartDiseaseorAttack  1   1209.6 1261.6
+## - Stroke                1   1210.2 1262.2
+## <none>                      1208.3 1262.3
+## - PhysActivity          1   1210.3 1262.3
+## - CholCheck             1   1212.2 1264.2
+## - HvyAlcoholConsump     1   1221.3 1273.3
+## - BMI                   1   1222.7 1274.7
+## - HighChol              1   1224.5 1276.5
+## - HighBP                1   1227.8 1279.8
+## - GenHlth               4   1261.4 1307.4
+## - Age                   8   1273.3 1311.3
+## 
+## Step:  AIC=1260.48
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     HeartDiseaseorAttack + PhysActivity + Veggies + HvyAlcoholConsump + 
+##     AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + DiffWalk + 
+##     Age
+## 
+##                        Df Deviance    AIC
+## - MentHlth              1   1208.6 1258.6
+## - DiffWalk              1   1208.6 1258.6
+## - Veggies               1   1208.7 1258.7
+## - NoDocbcCost           1   1209.5 1259.5
+## - AnyHealthcare         1   1209.6 1259.6
+## - HeartDiseaseorAttack  1   1209.8 1259.8
+## - Stroke                1   1210.3 1260.3
+## - PhysActivity          1   1210.5 1260.5
+## <none>                      1208.5 1260.5
+## - CholCheck             1   1212.5 1262.5
+## - HvyAlcoholConsump     1   1221.5 1271.5
+## - BMI                   1   1223.0 1273.0
+## - HighChol              1   1224.8 1274.8
+## - HighBP                1   1228.1 1278.1
+## - GenHlth               4   1262.3 1306.3
+## - Age                   8   1273.3 1309.3
+## 
+## Step:  AIC=1258.59
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     HeartDiseaseorAttack + PhysActivity + Veggies + HvyAlcoholConsump + 
+##     AnyHealthcare + NoDocbcCost + GenHlth + DiffWalk + Age
+## 
+##                        Df Deviance    AIC
+## - DiffWalk              1   1208.7 1256.7
+## - Veggies               1   1208.8 1256.8
+## - NoDocbcCost           1   1209.5 1257.5
+## - AnyHealthcare         1   1209.7 1257.7
+## - HeartDiseaseorAttack  1   1209.9 1257.9
+## - Stroke                1   1210.4 1258.4
+## <none>                      1208.6 1258.6
+## - PhysActivity          1   1210.6 1258.6
+## - CholCheck             1   1212.6 1260.6
+## - HvyAlcoholConsump     1   1221.5 1269.5
+## - BMI                   1   1223.1 1271.1
+## - HighChol              1   1224.9 1272.9
+## - HighBP                1   1228.4 1276.4
+## - GenHlth               4   1264.4 1306.4
+## - Age                   8   1273.4 1307.4
+## 
+## Step:  AIC=1256.72
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     HeartDiseaseorAttack + PhysActivity + Veggies + HvyAlcoholConsump + 
+##     AnyHealthcare + NoDocbcCost + GenHlth + Age
+## 
+##                        Df Deviance    AIC
+## - Veggies               1   1208.9 1254.9
+## - NoDocbcCost           1   1209.6 1255.6
+## - AnyHealthcare         1   1209.9 1255.9
+## - HeartDiseaseorAttack  1   1210.2 1256.2
+## - Stroke                1   1210.7 1256.7
+## <none>                      1208.7 1256.7
+## - PhysActivity          1   1210.8 1256.8
+## - CholCheck             1   1212.8 1258.8
+## - HvyAlcoholConsump     1   1221.7 1267.7
+## - BMI                   1   1223.7 1269.7
+## - HighChol              1   1225.0 1271.0
+## - HighBP                1   1228.5 1274.5
+## - Age                   8   1275.2 1307.2
+## - GenHlth               4   1268.6 1308.6
+## 
+## Step:  AIC=1254.92
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     HeartDiseaseorAttack + PhysActivity + HvyAlcoholConsump + 
+##     AnyHealthcare + NoDocbcCost + GenHlth + Age
+## 
+##                        Df Deviance    AIC
+## - NoDocbcCost           1   1209.8 1253.8
+## - AnyHealthcare         1   1210.1 1254.1
+## - HeartDiseaseorAttack  1   1210.4 1254.4
+## - Stroke                1   1210.8 1254.8
+## <none>                      1208.9 1254.9
+## - PhysActivity          1   1210.9 1254.9
+## - CholCheck             1   1213.2 1257.2
+## - HvyAlcoholConsump     1   1221.8 1265.8
+## - BMI                   1   1224.0 1268.0
+## - HighChol              1   1225.0 1269.0
+## - HighBP                1   1228.7 1272.7
+## - Age                   8   1275.2 1305.2
+## - GenHlth               4   1268.7 1306.7
+## 
+## Step:  AIC=1253.79
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     HeartDiseaseorAttack + PhysActivity + HvyAlcoholConsump + 
+##     AnyHealthcare + GenHlth + Age
+## 
+##                        Df Deviance    AIC
+## - HeartDiseaseorAttack  1   1211.3 1253.3
+## - AnyHealthcare         1   1211.6 1253.6
+## - PhysActivity          1   1211.7 1253.7
+## <none>                      1209.8 1253.8
+## - Stroke                1   1211.8 1253.8
+## - CholCheck             1   1214.5 1256.5
+## - HvyAlcoholConsump     1   1222.7 1264.7
+## - BMI                   1   1224.8 1266.8
+## - HighChol              1   1225.7 1267.7
+## - HighBP                1   1229.4 1271.4
+## - GenHlth               4   1268.7 1304.7
+## - Age                   8   1276.7 1304.7
+## 
+## Step:  AIC=1253.33
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     PhysActivity + HvyAlcoholConsump + AnyHealthcare + GenHlth + 
+##     Age
+## 
+##                     Df Deviance    AIC
+## - AnyHealthcare      1   1213.0 1253.0
+## <none>                   1211.3 1253.3
+## - PhysActivity       1   1213.4 1253.4
+## - Stroke             1   1214.0 1254.0
+## - CholCheck          1   1216.4 1256.4
+## - HvyAlcoholConsump  1   1224.6 1264.6
+## - BMI                1   1226.5 1266.5
+## - HighChol           1   1227.8 1267.8
+## - HighBP             1   1231.9 1271.9
+## - GenHlth            4   1272.8 1306.8
+## - Age                8   1281.2 1307.2
+## 
+## Step:  AIC=1253.04
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     PhysActivity + HvyAlcoholConsump + GenHlth + Age
+## 
+##                     Df Deviance    AIC
+## - PhysActivity       1   1214.9 1252.9
+## <none>                   1213.0 1253.0
+## - Stroke             1   1215.6 1253.6
+## - CholCheck          1   1219.4 1257.4
+## - HvyAlcoholConsump  1   1226.0 1264.0
+## - BMI                1   1228.5 1266.5
+## - HighChol           1   1229.3 1267.3
+## - HighBP             1   1233.7 1271.7
+## - GenHlth            4   1274.3 1306.3
+## - Age                8   1283.6 1307.6
+## 
+## Step:  AIC=1252.91
+## Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Stroke + 
+##     HvyAlcoholConsump + GenHlth + Age
+## 
+##                     Df Deviance    AIC
+## <none>                   1214.9 1252.9
+## - Stroke             1   1217.4 1253.4
+## - CholCheck          1   1220.6 1256.6
+## - HvyAlcoholConsump  1   1227.1 1263.1
+## - BMI                1   1231.1 1267.1
+## - HighChol           1   1231.1 1267.1
+## - HighBP             1   1236.0 1272.0
+## - Age                8   1286.9 1308.9
+## - GenHlth            4   1281.9 1311.9
+
+```{r}
+backward_model$coefficients
+```
+##        (Intercept)            HighBP1          HighChol1       CholCheck1 
+##        -7.06733512         0.69532783         0.58726054         1.16711816 
+##                BMI            Stroke1 HvyAlcoholConsump1           GenHlth2 
+##         0.04797231         0.57541429        -1.14142206         0.93451618 
+##           GenHlth3           GenHlth4           GenHlth5               Age2 
+##         1.59845930         2.11672768         1.92831158         0.48813177 
+##               Age3               Age4               Age5               Age6 
+##         0.84297892         0.80556786         1.82106392         2.01670185 
+##               Age7               Age8               Age9 
+##         2.42810634         2.77111464         2.68841029
+
+
+```{r}
+#Forward Model
+```
+## Start:  AIC=1651.11
+## Diabetes_binary ~ 1
+## 
+##                        Df Deviance    AIC
+## + GenHlth               4   1448.7 1458.7
+## + Age                   8   1451.5 1469.5
+## + HighBP                1   1482.5 1486.5
+## + HighChol              1   1531.9 1535.9
+## + BMI                   1   1558.9 1562.9
+## + DiffWalk              1   1582.6 1586.6
+## + PhysHlth              1   1599.3 1603.3
+## + HeartDiseaseorAttack  1   1600.5 1604.5
+## + PhysActivity          1   1623.5 1627.5
+## + Stroke                1   1629.2 1633.2
+## + Income                7   1621.0 1637.0
+## + Education             5   1628.1 1640.1
+## + MentHlth              1   1637.1 1641.1
+## + CholCheck             1   1637.6 1641.6
+## + HvyAlcoholConsump     1   1639.7 1643.7
+## + Smoker                1   1641.5 1645.5
+## + Veggies               1   1641.6 1645.6
+## + Fruits                1   1643.9 1647.9
+## + AnyHealthcare         1   1645.2 1649.2
+## <none>                      1649.1 1651.1
+## + NoDocbcCost           1   1649.1 1653.1
+## 
+## Step:  AIC=1458.66
+## Diabetes_binary ~ GenHlth
+## 
+##                        Df Deviance    AIC
+## + Age                   8   1312.0 1338.0
+## + HighBP                1   1366.2 1378.2
+## + HighChol              1   1379.8 1391.8
+## + BMI                   1   1410.7 1422.7
+## + HeartDiseaseorAttack  1   1431.5 1443.5
+## + HvyAlcoholConsump     1   1436.0 1448.0
+## + CholCheck             1   1437.5 1449.5
+## + DiffWalk              1   1439.5 1451.5
+## + AnyHealthcare         1   1443.5 1455.5
+## + NoDocbcCost           1   1444.1 1456.1
+## + Stroke                1   1444.2 1456.2
+## + PhysActivity          1   1445.2 1457.2
+## <none>                      1448.7 1458.7
+## + PhysHlth              1   1447.6 1459.6
+## + Veggies               1   1448.1 1460.1
+## + Fruits                1   1448.2 1460.2
+## + MentHlth              1   1448.3 1460.3
+## + Smoker                1   1448.6 1460.6
+## + Education             5   1444.0 1464.0
+## + Income                7   1442.1 1466.1
+## 
+## Step:  AIC=1338.05
+## Diabetes_binary ~ GenHlth + Age
+## 
+##                        Df Deviance    AIC
+## + HighBP                1   1272.4 1300.4
+## + BMI                   1   1280.6 1308.6
+## + HighChol              1   1282.0 1310.0
+## + HvyAlcoholConsump     1   1300.5 1328.5
+## + CholCheck             1   1302.8 1330.8
+## + HeartDiseaseorAttack  1   1306.1 1334.1
+## + AnyHealthcare         1   1308.8 1336.8
+## <none>                      1312.0 1338.0
+## + NoDocbcCost           1   1310.1 1338.1
+## + Stroke                1   1310.2 1338.2
+## + DiffWalk              1   1310.2 1338.2
+## + PhysActivity          1   1310.6 1338.6
+## + Fruits                1   1311.9 1339.9
+## + Veggies               1   1312.0 1340.0
+## + MentHlth              1   1312.0 1340.0
+## + Smoker                1   1312.0 1340.0
+## + PhysHlth              1   1312.0 1340.0
+## + Education             5   1309.3 1345.3
+## + Income                7   1307.2 1347.2
+## 
+## Step:  AIC=1300.39
+## Diabetes_binary ~ GenHlth + Age + HighBP
+## 
+##                        Df Deviance    AIC
+## + BMI                   1   1252.6 1282.6
+## + HighChol              1   1253.4 1283.4
+## + HvyAlcoholConsump     1   1257.5 1287.5
+## + CholCheck             1   1265.8 1295.8
+## + HeartDiseaseorAttack  1   1268.5 1298.5
+## + AnyHealthcare         1   1269.5 1299.5
+## + NoDocbcCost           1   1270.3 1300.3
+## + Stroke                1   1270.3 1300.3
+## <none>                      1272.4 1300.4
+## + DiffWalk              1   1271.1 1301.1
+## + PhysActivity          1   1271.5 1301.5
+## + Veggies               1   1272.2 1302.2
+## + Smoker                1   1272.4 1302.4
+## + PhysHlth              1   1272.4 1302.4
+## + MentHlth              1   1272.4 1302.4
+## + Fruits                1   1272.4 1302.4
+## + Education             5   1269.0 1307.0
+## + Income                7   1267.9 1309.9
+## 
+## Step:  AIC=1282.59
+## Diabetes_binary ~ GenHlth + Age + HighBP + BMI
+## 
+##                        Df Deviance    AIC
+## + HighChol              1   1235.8 1267.8
+## + HvyAlcoholConsump     1   1240.2 1272.2
+## + CholCheck             1   1245.9 1277.9
+## + HeartDiseaseorAttack  1   1248.8 1280.8
+## + Stroke                1   1249.7 1281.7
+## + AnyHealthcare         1   1250.1 1282.1
+## + NoDocbcCost           1   1250.3 1282.3
+## <none>                      1252.6 1282.6
+## + PhysActivity          1   1252.1 1284.1
+## + DiffWalk              1   1252.2 1284.2
+## + Veggies               1   1252.5 1284.5
+## + Fruits                1   1252.5 1284.5
+## + Smoker                1   1252.6 1284.6
+## + PhysHlth              1   1252.6 1284.6
+## + MentHlth              1   1252.6 1284.6
+## + Education             5   1249.0 1289.0
+## + Income                7   1246.3 1290.3
+## 
+## Step:  AIC=1267.81
+## Diabetes_binary ~ GenHlth + Age + HighBP + BMI + HighChol
+## 
+##                        Df Deviance    AIC
+## + HvyAlcoholConsump     1   1223.4 1257.4
+## + CholCheck             1   1229.7 1263.7
+## + HeartDiseaseorAttack  1   1232.8 1266.8
+## + Stroke                1   1233.0 1267.0
+## + AnyHealthcare         1   1233.2 1267.2
+## + NoDocbcCost           1   1233.3 1267.3
+## <none>                      1235.8 1267.8
+## + PhysActivity          1   1235.3 1269.3
+## + DiffWalk              1   1235.3 1269.3
+## + Veggies               1   1235.5 1269.5
+## + Fruits                1   1235.7 1269.7
+## + Smoker                1   1235.7 1269.7
+## + MentHlth              1   1235.8 1269.8
+## + PhysHlth              1   1235.8 1269.8
+## + Education             5   1232.3 1274.3
+## + Income                7   1230.4 1276.4
+## 
+## Step:  AIC=1257.37
+## Diabetes_binary ~ GenHlth + Age + HighBP + BMI + HighChol + HvyAlcoholConsump
+## 
+##                        Df Deviance    AIC
+## + CholCheck             1   1217.4 1253.4
+## + Stroke                1   1220.6 1256.6
+## + AnyHealthcare         1   1220.6 1256.6
+## + HeartDiseaseorAttack  1   1220.7 1256.7
+## + NoDocbcCost           1   1221.0 1257.0
+## <none>                      1223.4 1257.4
+## + PhysActivity          1   1222.2 1258.2
+## + DiffWalk              1   1222.9 1258.9
+## + Veggies               1   1223.0 1259.0
+## + Fruits                1   1223.3 1259.3
+## + MentHlth              1   1223.3 1259.3
+## + Smoker                1   1223.3 1259.3
+## + PhysHlth              1   1223.3 1259.3
+## + Education             5   1219.8 1263.8
+## + Income                7   1219.1 1267.1
+## 
+## Step:  AIC=1253.38
+## Diabetes_binary ~ GenHlth + Age + HighBP + BMI + HighChol + HvyAlcoholConsump + 
+##     CholCheck
+## 
+##                        Df Deviance    AIC
+## + Stroke                1   1214.9 1252.9
+## + HeartDiseaseorAttack  1   1215.1 1253.1
+## <none>                      1217.4 1253.4
+## + PhysActivity          1   1215.6 1253.6
+## + AnyHealthcare         1   1215.9 1253.9
+## + NoDocbcCost           1   1216.0 1254.0
+## + DiffWalk              1   1217.0 1255.0
+## + Veggies               1   1217.2 1255.2
+## + MentHlth              1   1217.3 1255.3
+## + PhysHlth              1   1217.3 1255.3
+## + Smoker                1   1217.4 1255.4
+## + Fruits                1   1217.4 1255.4
+## + Education             5   1214.0 1260.0
+## + Income                7   1211.7 1261.7
+## 
+## Step:  AIC=1252.91
+## Diabetes_binary ~ GenHlth + Age + HighBP + BMI + HighChol + HvyAlcoholConsump + 
+##     CholCheck + Stroke
+## 
+##                        Df Deviance    AIC
+## <none>                      1214.9 1252.9
+## + PhysActivity          1   1213.0 1253.0
+## + HeartDiseaseorAttack  1   1213.2 1253.2
+## + AnyHealthcare         1   1213.4 1253.4
+## + NoDocbcCost           1   1213.7 1253.7
+## + DiffWalk              1   1214.6 1254.6
+## + Veggies               1   1214.8 1254.8
+## + MentHlth              1   1214.8 1254.8
+## + Fruits                1   1214.9 1254.9
+## + PhysHlth              1   1214.9 1254.9
+## + Smoker                1   1214.9 1254.9
+## + Education             5   1211.5 1259.5
+## + Income                7   1210.0 1262.0
+
+```{r}
+library(glmnet)
+## Loading required package: Matrix
+## Loaded glmnet 4.1-8
+# Convert data frame to matrix
+X <- model.matrix(Diabetes_binary ~ ., data = train)[,-1]  # Exclude intercept column
+y <- as.numeric(train$Diabetes_binary)
+ 
+# Fit Lasso regression model
+lasso_model <- cv.glmnet(X, y, alpha = 1)  # alpha = 1 for Lasso
+ 
+# Predict probabilities using optimal lambda
+lasso_probs <- predict(lasso_model, newx = X, s = "lambda.min", type = "response")
+ 
+# Create a glm object using the original response variable
+lasso_glm <- glm(Diabetes_binary ~ ., data = train, family = binomial)
+ 
+# AIC for the Lasso model
+lasso_aic <- AIC(lasso_glm)
+cat("AIC for Lasso Model:", lasso_aic, "\n")
+summary(lasso_glm)
+```
+## 
+## Call:
+## glm(formula = Diabetes_binary ~ ., family = binomial, data = train)
+## 
+## Coefficients:
+##                        Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)           -7.031762   1.855077  -3.791 0.000150 ***
+## HighBP1                0.691528   0.154803   4.467 7.93e-06 ***
+## HighChol1              0.584915   0.149270   3.919 8.91e-05 ***
+## CholCheck1             1.035149   0.536167   1.931 0.053527 .  
+## BMI                    0.049449   0.012897   3.834 0.000126 ***
+## Smoker1               -0.023963   0.152565  -0.157 0.875192    
+## Stroke1                0.434558   0.395979   1.097 0.272455    
+## HeartDiseaseorAttack1  0.285630   0.242229   1.179 0.238329    
+## PhysActivity1         -0.210129   0.178395  -1.178 0.238842    
+## Fruits1                0.044736   0.150738   0.297 0.766634    
+## Veggies1               0.059811   0.177481   0.337 0.736116    
+## HvyAlcoholConsump1    -1.124228   0.347108  -3.239 0.001200 ** 
+## AnyHealthcare1         0.475778   0.339002   1.403 0.160477    
+## NoDocbcCost1          -0.349269   0.268555  -1.301 0.193414    
+## GenHlth2               0.905501   0.301687   3.001 0.002687 ** 
+## GenHlth3               1.563315   0.302504   5.168 2.37e-07 ***
+## GenHlth4               1.987342   0.350794   5.665 1.47e-08 ***
+## GenHlth5               1.750613   0.474913   3.686 0.000228 ***
+## MentHlth               0.002575   0.010760   0.239 0.810834    
+## PhysHlth              -0.002987   0.011538  -0.259 0.795708    
+## DiffWalk1              0.048073   0.253027   0.190 0.849315    
+## Age2                   0.710669   1.207170   0.589 0.556058    
+## Age3                   0.909532   1.143985   0.795 0.426581    
+## Age4                   0.891227   1.111901   0.802 0.422822    
+## Age5                   1.835925   1.065955   1.722 0.085010 .  
+## Age6                   2.044687   1.053805   1.940 0.052345 .  
+## Age7                   2.447642   1.048356   2.335 0.019557 *  
+## Age8                   2.787840   1.046609   2.664 0.007729 ** 
+## Age9                   2.700009   1.046934   2.579 0.009910 ** 
+## Education2             0.411736   1.398515   0.294 0.768445    
+## Education3            -0.318428   1.355837  -0.235 0.814319    
+## Education4             0.235888   1.299263   0.182 0.855932    
+## Education5            -0.043353   1.300959  -0.033 0.973417    
+## Education6             0.042894   1.304231   0.033 0.973764    
+## Income2               -0.088427   0.525710  -0.168 0.866422    
+## Income3                0.113792   0.496178   0.229 0.818607    
+## Income4               -0.272591   0.480623  -0.567 0.570605    
+## Income5               -0.171271   0.469502  -0.365 0.715265    
+## Income6               -0.631543   0.456526  -1.383 0.166552    
+## Income7               -0.384711   0.447172  -0.860 0.389613    
+## Income8               -0.377341   0.436485  -0.864 0.387314    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1649.1  on 1198  degrees of freedom
+## Residual deviance: 1199.1  on 1158  degrees of freedom
+## AIC: 1281.1
+## 
+## Number of Fisher Scoring iterations: 6
+
+```{r}
+#Model we're moving forward with
+forward_log_model = forward_model
 summary(forward_log_model)
 ```
+## Call:
+## glm(formula = Diabetes_binary ~ GenHlth + Age + HighBP + BMI + 
+##     HighChol + HvyAlcoholConsump + CholCheck + Stroke, family = binomial, 
+##     data = train)
+## 
+## Coefficients:
+##                    Estimate Std. Error z value Pr(>|z|)    
+## (Intercept)        -7.06734    1.22697  -5.760 8.41e-09 ***
+## GenHlth2            0.93452    0.30054   3.109 0.001874 ** 
+## GenHlth3            1.59846    0.29870   5.351 8.73e-08 ***
+## GenHlth4            2.11673    0.32600   6.493 8.41e-11 ***
+## GenHlth5            1.92831    0.39546   4.876 1.08e-06 ***
+## Age2                0.48813    1.20432   0.405 0.685245    
+## Age3                0.84298    1.13727   0.741 0.458552    
+## Age4                0.80557    1.10344   0.730 0.465358    
+## Age5                1.82106    1.05766   1.722 0.085109 .  
+## Age6                2.01670    1.04627   1.928 0.053915 .  
+## Age7                2.42811    1.03997   2.335 0.019554 *  
+## Age8                2.77111    1.03846   2.668 0.007619 ** 
+## Age9                2.68841    1.03770   2.591 0.009577 ** 
+## HighBP1             0.69533    0.15093   4.607 4.09e-06 ***
+## BMI                 0.04797    0.01221   3.929 8.53e-05 ***
+## HighChol1           0.58726    0.14571   4.030 5.57e-05 ***
+## HvyAlcoholConsump1 -1.14142    0.33822  -3.375 0.000739 ***
+## CholCheck1          1.16712    0.52156   2.238 0.025237 *  
+## Stroke1             0.57541    0.37630   1.529 0.126233    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1649.1  on 1198  degrees of freedom
+## Residual deviance: 1214.9  on 1180  degrees of freedom
+## AIC: 1252.9
+## 
+## Number of Fisher Scoring iterations: 6
 
 ```{r}
-resids = rstandard(forward_log_model)
-fits = forward_log_model$fitted
-qqnorm(resids,col="navy",pch = 19) 
-qqline(resids,col="red")
+#Reject Null Hypothesis that all coeffs are 0
+gstatForward = forward_log_model$null.deviance - deviance(forward_log_model)
+cbind(gstatForward, 1-pchisq(gstatForward,length(coef(forward_log_model))-1))
 ```
-
-
-```{r}
-plot(fits, resids,xlab="Fitted Values",ylab="Residuals",main="",col="navy",pch = 19) 
-abline(0, 0,col="gold",lty=2, lwd=2)
-```
+##      gstatForward  
+## [1,]     434.2018 0
 
 ```{r}
 car::vif(forward_log_model)
-mean((forward_log_model$residuals))
-```
-
-```{r}
+##                       GVIF Df GVIF^(1/(2*Df))
+## GenHlth           1.154080  4        1.018074
+## Age               1.120287  8        1.007124
+## HighBP            1.135743  1        1.065713
+## BMI               1.070866  1        1.034827
+## HighChol          1.065727  1        1.032340
+## HvyAlcoholConsump 1.026298  1        1.013064
+## CholCheck         1.009510  1        1.004744
+## Stroke            1.052575  1        1.025951
+## GOF Test
 pearres2 = residuals(forward_log_model,type="pearson") 
 pearson.tvalue = sum(pearres2^2)
-c(pearson.tvalue, 1-pchisq(pearson.tvalue,1481))
+c(pearson.tvalue, 1-pchisq(pearson.tvalue,forward_log_model$df.residual))
+## [1] 1175.2664573    0.5334085
+c(deviance(forward_log_model), 1-pchisq(deviance(forward_log_model),forward_log_model$df.residual))
+## [1] 1214.9097221    0.2341252
+## Test for overall regression
+gstat = forward_log_model$null.deviance - deviance(forward_log_model)
+cbind(gstat, 1-pchisq(gstat,length(coef(forward_log_model))-1))
+```
+##         gstat  
+## [1,] 434.2018 0
+
+```{r}
+age.t = factor(test$Age, labels=c("1", "2", "3", "4", "5","6", "7", "8", "9")) 
+genHlth.t = factor(test$GenHlth, labels=c("1","2", "3", "4", "5")) 
+pred.data = data.frame(Age=age.t, GenHlth=genHlth.t, HighBP=test$HighBP,BMI = test$BMI, HighChol = test$HighChol, HvyAlcoholConsump = test$HvyAlcoholConsump, CholCheck = test$CholCheck, Stroke = test$Stroke)
+### Predict forward model 
+pred.test = predict.glm(forward_model,pred.data,type="response") 
+### predict full model
+pred.test_full = predict.glm(full_model,test,type="response") 
+### Prediction Accuracy for multiple thresholds 
+predicted_classes0.4 <- ifelse(pred.test > 0.4, 1, 0)
+predicted_classes0.5 =  ifelse(pred.test > 0.5, 1, 0)
+predicted_full = ifelse(pred.test_full > 0.4, 1, 0)
+library(caret) 
+## Loading required package: lattice
+conf_matrix0.4 <- confusionMatrix(factor(predicted_classes0.4), test$Diabetes_binary)
+conf_matrix0.5 = confusionMatrix(factor(predicted_classes0.5), test$Diabetes_binary)
+conf_matrixfull = confusionMatrix(factor(predicted_full), test$Diabetes_binary)
+fourfoldplot(as.table(conf_matrix0.4),color=c("red","green"),main = "0.4 Final Model Confusion Matrix")
+
 ```
